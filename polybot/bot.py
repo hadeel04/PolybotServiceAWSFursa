@@ -1,8 +1,11 @@
+import json
+
 import telebot
 from loguru import logger
 import os
 import time
 from telebot.types import InputFile
+import boto3
 
 
 class Bot:
@@ -17,7 +20,8 @@ class Bot:
         time.sleep(0.5)
 
         # set the webhook URL
-        self.telegram_bot_client.set_webhook(url=f'{telegram_chat_url}/{token}/', timeout=60)
+        self.telegram_bot_client.set_webhook(url=f'{telegram_chat_url}/{token}/', timeout=60,
+                                             certificate=open("cert.pem", "r"))
 
         logger.info(f'Telegram Bot information\n\n{self.telegram_bot_client.get_me()}')
 
@@ -66,6 +70,7 @@ class Bot:
 
 
 class ObjectDetectionBot(Bot):
+
     def handle_message(self, msg):
         logger.info(f'Incoming message: {msg}')
 
@@ -73,5 +78,20 @@ class ObjectDetectionBot(Bot):
             photo_path = self.download_user_photo(msg)
 
             # TODO upload the photo to S3
+            bucket_name = os.environ['BUCKET_NAME']
+            s3_client = boto3.client('s3')
+            img_name = os.path.basename(photo_path)
+            s3_client.upload_file(photo_path, bucket_name, img_name)
+
             # TODO send a job to the SQS queue
+            queue_url = os.environ['SQS_QUEUE_URL']
+            sqs_client = boto3.client('sqs', region_name='us-east-2')
+            message_body = {
+                'img_name': img_name,
+                'chat_id': msg['chat']['id']
+            }
+            message_body_json = json.dumps(message_body)
+            sqs_client.send_message(QueueUrl=queue_url, MessageBody=message_body_json)
+
             # TODO send message to the Telegram end-user (e.g. Your image is being processed. Please wait...)
+            self.send_text(msg['chat']['id'], "Your image is being processed. Please wait...")
