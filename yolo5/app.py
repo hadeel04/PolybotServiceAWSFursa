@@ -11,6 +11,9 @@ from decimal import Decimal
 
 images_bucket = os.environ['BUCKET_NAME']
 queue_name = os.environ['SQS_QUEUE_NAME']
+REGION = os.environ['REGION']
+DYNAMODB_TABLE_NAME = os.environ['DYNAMODB_TABLE_NAME']
+
 
 sqs_client = boto3.client('sqs', region_name='us-east-2')
 
@@ -93,8 +96,8 @@ def consume():
                 }
 
                 # TODO store the prediction_summary in a DynamoDB table
-                dynamodb = boto3.resource('dynamodb', region_name='us-east-2')
-                table = dynamodb.Table('hadeel-yolo5-predictions')
+                dynamodb = boto3.resource('dynamodb', region_name=REGION)
+                table = dynamodb.Table(DYNAMODB_TABLE_NAME)
                 table.put_item(Item=prediction_summary)
 
                 # TODO perform a GET request to Polybot to `/results` endpoint

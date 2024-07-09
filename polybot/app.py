@@ -9,12 +9,13 @@ from botocore.exceptions import ClientError
 
 app = flask.Flask(__name__)
 
-
+REGION = os.environ['REGION']
+DYNAMODB_TABLE_NAME = os.environ['DYNAMODB_TABLE_NAME']
 # TODO load TELEGRAM_TOKEN value from Secret Manager
 
 def get_secret():
     secret_name = "hadeel-secret"
-    region_name = "us-east-2"
+    region_name = REGION
 
     # Create a Secrets Manager client
     session = boto3.session.Session()
@@ -94,8 +95,8 @@ def results():
     prediction_id = request.args.get('predictionId')
 
     # TODO use the prediction_id to retrieve results from DynamoDB and send to the end-user
-    dynamodb = boto3.resource('dynamodb', region_name='us-east-2')
-    table = dynamodb.Table('hadeel-yolo5-predictions')
+    dynamodb = boto3.resource('dynamodb', region_name=REGION)
+    table = dynamodb.Table(DYNAMODB_TABLE_NAME)
     response = table.get_item(Key={'prediction_id': prediction_id})
     prediction = response['Item']
     chat_id = prediction['chat_id']

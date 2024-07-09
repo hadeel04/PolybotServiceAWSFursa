@@ -82,10 +82,10 @@ class ObjectDetectionBot(Bot):
             s3_client = boto3.client('s3')
             img_name = os.path.basename(photo_path)
             s3_client.upload_file(photo_path, bucket_name, img_name)
-
+            REGION = os.environ['REGION']
             # TODO send a job to the SQS queue
             queue_url = os.environ['SQS_QUEUE_URL']
-            sqs_client = boto3.client('sqs', region_name='us-east-2')
+            sqs_client = boto3.client('sqs', region_name=REGION)
             message_body = {
                 'img_name': img_name,
                 'chat_id': msg['chat']['id']
